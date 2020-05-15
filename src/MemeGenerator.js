@@ -2,15 +2,12 @@ import react, { useState, useEffect } from 'react';
 // this comment tells babel to convert jsx to calls to a function called jsx instead of React.createElement
 /** @jsx jsx */
 import { css, jsx } from '@emotion/core';
-import axios from 'axios';
-
 const flexStyle = css`
   display: flex;
   flex-direction: column;
   align-items: space-between;
   text-align: center;
 `;
-
 const imageStyle = css`
   height: 1fr;
   width: 1fr;
@@ -20,7 +17,6 @@ export default function CreateMeme() {
   const [image, setImage] = useState('bihw');
   const [topText, setTopText] = useState('it aint much');
   const [bottomText, setBottomText] = useState('but its honest work');
-  const [data, setData] = useState([]);
   const [select, setSelect] = useState([]);
   const [newUrl, setNewUrl] = useState(
     'https://memegen.link/' +
@@ -31,7 +27,6 @@ export default function CreateMeme() {
       bottomText +
       '/.jpg?watermark=none',
   );
-
   useEffect(() => {
     fetch('https://memegen.link/api/templates/', {
       headers: { 'Content-Type': 'application/json' },
@@ -43,12 +38,37 @@ export default function CreateMeme() {
       })
       .catch(e => console.log(e));
   }, []);
-  console.log(select);
 
+  function downloadHandler() {
+    const url = newUrl;
+    const name = newUrl.replace('https://memegen.link/', '');
+    // name.toString(); geht auch wenn sie separat mache
+    fetch(url, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    })
+      .then(function (response) {
+        return response.blob();
+      })
+      .then(function (blob) {
+        if (window.navigator && window.navigator.msSaveOrOpenBlob) {
+          window.navigator.msSaveOrOpenBlob(blob, name.toString());
+        } else {
+          let a = document.createElement('a');
+          a.href = URL.createObjectURL(blob);
+          a.download = name.toString();
+          a.click();
+        }
+      });
+  }
+
+  console.log(select);
   return (
     <div css={flexStyle}>
       <form>
-        <select>
+        <select onChange={e => setImage(e.target.value)}>
+          value={image}
           {select.map((name, i) => {
             return (
               <option key={i} value={name}>
@@ -57,7 +77,6 @@ export default function CreateMeme() {
             );
           })}
         </select>
-
         <input
           type='text'
           name='Line 1'
@@ -88,11 +107,19 @@ export default function CreateMeme() {
         >
           Submit
         </button>
+        <button
+          data-name={newUrl.toString}
+          data-url={newUrl}
+          //ok the whole thing downloads but name/format issue plus datei type schaut lustig aus
+          onClick={downloadHandler}
+          // download
+        >
+          Download the image
+        </button>
       </form>
-
-      <div>
-        <img css={imageStyle} src={newUrl} alt='Your meme here' />
-      </div>
+      <a href={newUrl}>
+        <img css={imageStyle} src={newUrl} alt='Your meme here' download></img>
+      </a>
     </div>
   );
 }
